@@ -1,0 +1,1220 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TD Interview — Teleprompter</title>
+<link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+:root {
+  --bg: #0a0c10;
+  --surface: #111318;
+  --surface2: #181c24;
+  --border: rgba(255,255,255,0.08);
+  --accent: #4ade9a;
+  --accent-dim: rgba(74,222,154,0.15);
+  --blue: #60a5fa;
+  --yellow: #fbbf24;
+  --pink: #f472b6;
+  --red: #f87171;
+  --text: #f0f2f8;
+  --text-muted: #6b7280;
+  --text-dim: #374151;
+  --highlight: rgba(74,222,154,0.12);
+  --scroll-line: rgba(74,222,154,0.4);
+}
+
+body {
+  font-family: 'Atkinson Hyperlegible', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  overflow: hidden;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ── TOP CONTROL BAR ── */
+.topbar {
+  flex-shrink: 0;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  padding: 10px 16px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  z-index: 100;
+}
+
+.topbar-title {
+  font-family: 'DM Mono', monospace;
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  color: var(--accent);
+  text-transform: uppercase;
+  margin-right: 6px;
+}
+
+.ctrl-group {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 4px 10px;
+}
+
+.ctrl-label {
+  font-family: 'DM Mono', monospace;
+  font-size: 10px;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  white-space: nowrap;
+}
+
+.ctrl-btn {
+  background: none;
+  border: none;
+  color: var(--text);
+  font-size: 16px;
+  cursor: pointer;
+  padding: 2px 6px;
+  border-radius: 4px;
+  line-height: 1;
+  transition: background 0.1s;
+}
+.ctrl-btn:hover { background: rgba(255,255,255,0.08); }
+
+.ctrl-val {
+  font-family: 'DM Mono', monospace;
+  font-size: 12px;
+  color: var(--accent);
+  min-width: 28px;
+  text-align: center;
+}
+
+.play-btn {
+  background: var(--accent);
+  color: #000;
+  border: none;
+  border-radius: 8px;
+  padding: 6px 16px;
+  font-family: 'DM Mono', monospace;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  letter-spacing: 0.05em;
+  transition: opacity 0.15s;
+  white-space: nowrap;
+}
+.play-btn:hover { opacity: 0.85; }
+.play-btn.playing { background: var(--yellow); }
+
+.reset-btn {
+  background: none;
+  border: 1px solid var(--border);
+  color: var(--text-muted);
+  border-radius: 8px;
+  padding: 6px 12px;
+  font-family: 'DM Mono', monospace;
+  font-size: 11px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.reset-btn:hover { border-color: var(--text-muted); color: var(--text); }
+
+.spacer { flex: 1; }
+
+.q-nav {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.q-nav-btn {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  color: var(--text);
+  border-radius: 6px;
+  padding: 4px 10px;
+  font-size: 16px;
+  cursor: pointer;
+  transition: background 0.1s;
+}
+.q-nav-btn:hover { background: rgba(255,255,255,0.06); }
+
+.q-counter {
+  font-family: 'DM Mono', monospace;
+  font-size: 11px;
+  color: var(--text-muted);
+  min-width: 60px;
+  text-align: center;
+}
+
+/* ── SIDEBAR Q LIST ── */
+.layout {
+  display: flex;
+  flex: 1;
+  overflow: hidden;
+}
+
+.sidebar {
+  width: 260px;
+  flex-shrink: 0;
+  background: var(--surface);
+  border-right: 1px solid var(--border);
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--border) transparent;
+}
+
+.sidebar-section {
+  border-bottom: 1px solid var(--border);
+}
+
+.sidebar-heading {
+  font-family: 'DM Mono', monospace;
+  font-size: 9px;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+  padding: 12px 14px 6px;
+}
+
+.sidebar-item {
+  display: block;
+  width: 100%;
+  background: none;
+  border: none;
+  text-align: left;
+  padding: 8px 14px;
+  font-size: 12px;
+  color: var(--text-muted);
+  cursor: pointer;
+  line-height: 1.4;
+  border-left: 2px solid transparent;
+  transition: all 0.1s;
+  font-family: 'Atkinson Hyperlegible', sans-serif;
+}
+
+.sidebar-item:hover { background: var(--surface2); color: var(--text); }
+.sidebar-item.active {
+  background: var(--accent-dim);
+  color: var(--accent);
+  border-left-color: var(--accent);
+}
+
+/* ── TELEPROMPTER MAIN ── */
+.prompter-wrap {
+  flex: 1;
+  position: relative;
+  overflow: hidden;
+}
+
+/* Gradient fade top & bottom */
+.prompter-wrap::before,
+.prompter-wrap::after {
+  content: '';
+  position: absolute;
+  left: 0; right: 0;
+  height: 100px;
+  z-index: 10;
+  pointer-events: none;
+}
+.prompter-wrap::before {
+  top: 0;
+  background: linear-gradient(to bottom, var(--bg) 0%, transparent 100%);
+}
+.prompter-wrap::after {
+  bottom: 0;
+  background: linear-gradient(to top, var(--bg) 0%, transparent 100%);
+}
+
+/* Reading guide line */
+.guide-line {
+  position: absolute;
+  top: 38%;
+  left: 0; right: 0;
+  height: 2px;
+  background: var(--scroll-line);
+  z-index: 11;
+  pointer-events: none;
+  box-shadow: 0 0 12px var(--accent);
+}
+
+.prompter-scroll {
+  height: 100%;
+  overflow-y: auto;
+  scrollbar-width: none;
+  padding: 45vh 60px 55vh;
+}
+.prompter-scroll::-webkit-scrollbar { display: none; }
+
+/* ── CARD STYLES ── */
+.card {
+  max-width: 780px;
+  margin: 0 auto 60px;
+  opacity: 0.3;
+  transition: opacity 0.4s;
+}
+.card.current { opacity: 1; }
+.card.nearby { opacity: 0.65; }
+
+.card-section-badge {
+  font-family: 'DM Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  margin-bottom: 10px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.card-section-badge::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--border);
+}
+
+.card-num {
+  font-family: 'DM Mono', monospace;
+  font-size: 11px;
+  color: var(--text-dim);
+  margin-bottom: 6px;
+}
+
+.card-question {
+  font-size: clamp(18px, 2.5vw, 26px);
+  font-weight: 700;
+  color: var(--text);
+  line-height: 1.3;
+  margin-bottom: 20px;
+  padding: 16px 20px;
+  background: var(--surface2);
+  border-left: 3px solid;
+  border-radius: 0 8px 8px 0;
+}
+
+.card-answer-label {
+  font-family: 'DM Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin-bottom: 14px;
+}
+
+.card-answer {
+  font-size: clamp(20px, 2.8vw, 30px);
+  line-height: 1.85;
+  color: var(--text);
+  font-weight: 400;
+}
+
+/* Pause markers — visual breath points */
+.card-answer .pause {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  background: var(--accent);
+  border-radius: 50%;
+  margin: 0 6px;
+  vertical-align: middle;
+  opacity: 0.6;
+}
+
+.card-tip {
+  margin-top: 20px;
+  padding: 12px 16px;
+  background: rgba(74,222,154,0.06);
+  border: 1px solid rgba(74,222,154,0.15);
+  border-radius: 8px;
+  font-size: clamp(13px, 1.6vw, 16px);
+  color: var(--text-muted);
+  line-height: 1.6;
+}
+
+.card-tip strong { color: var(--accent); }
+
+.card-warn {
+  margin-top: 20px;
+  padding: 12px 16px;
+  background: rgba(251,191,36,0.06);
+  border: 1px solid rgba(251,191,36,0.2);
+  border-radius: 8px;
+  font-size: clamp(13px, 1.6vw, 16px);
+  color: var(--text-muted);
+  line-height: 1.6;
+}
+.card-warn strong { color: var(--yellow); }
+
+/* STAR labels */
+.star-label {
+  font-weight: 700;
+  font-size: 0.9em;
+}
+
+/* Font size toggle classes */
+body.font-sm .card-answer { font-size: clamp(16px, 2vw, 22px); }
+body.font-sm .card-question { font-size: clamp(15px, 2vw, 20px); }
+body.font-md .card-answer { font-size: clamp(20px, 2.8vw, 30px); }
+body.font-md .card-question { font-size: clamp(18px, 2.5vw, 26px); }
+body.font-lg .card-answer { font-size: clamp(26px, 3.5vw, 38px); line-height: 1.9; }
+body.font-lg .card-question { font-size: clamp(22px, 3vw, 32px); }
+body.font-xl .card-answer { font-size: clamp(32px, 4.5vw, 48px); line-height: 1.95; }
+body.font-xl .card-question { font-size: clamp(26px, 3.5vw, 40px); }
+
+/* Keyboard hint */
+.key-hint {
+  font-family: 'DM Mono', monospace;
+  font-size: 10px;
+  color: var(--text-dim);
+  padding: 6px 10px;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  white-space: nowrap;
+}
+
+/* Progress bar */
+.progress-bar {
+  height: 2px;
+  background: var(--border);
+  flex-shrink: 0;
+}
+
+.progress-fill {
+  height: 100%;
+  background: var(--accent);
+  width: 0%;
+  transition: width 0.3s;
+}
+</style>
+</head>
+<body class="font-md">
+
+<div class="topbar">
+  <span class="topbar-title">TD Interview Teleprompter</span>
+
+  <!-- Play/Pause -->
+  <button class="play-btn" id="playBtn" onclick="togglePlay()">▶ Play</button>
+  <button class="reset-btn" onclick="resetScroll()">↺ Reset</button>
+
+  <!-- Speed -->
+  <div class="ctrl-group">
+    <span class="ctrl-label">Speed</span>
+    <button class="ctrl-btn" onclick="changeSpeed(-0.5)">−</button>
+    <span class="ctrl-val" id="speedVal">1.0×</span>
+    <button class="ctrl-btn" onclick="changeSpeed(0.5)">+</button>
+  </div>
+
+  <!-- Font size -->
+  <div class="ctrl-group">
+    <span class="ctrl-label">Text</span>
+    <button class="ctrl-btn" onclick="changeFont(-1)">A−</button>
+    <span class="ctrl-val" id="fontVal">M</span>
+    <button class="ctrl-btn" onclick="changeFont(1)">A+</button>
+  </div>
+
+  <span class="spacer"></span>
+
+  <!-- Q navigation -->
+  <div class="q-nav">
+    <button class="q-nav-btn" onclick="prevCard()">‹</button>
+    <span class="q-counter" id="qCounter">1 / 44</span>
+    <button class="q-nav-btn" onclick="nextCard()">›</button>
+  </div>
+
+  <span class="key-hint">Space = play/pause · ← → = prev/next</span>
+</div>
+
+<div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
+
+<div class="layout">
+  <!-- Sidebar -->
+  <div class="sidebar" id="sidebar"></div>
+
+  <!-- Prompter -->
+  <div class="prompter-wrap">
+    <div class="guide-line"></div>
+    <div class="prompter-scroll" id="scroller"></div>
+  </div>
+</div>
+
+<script>
+// ── ALL Q&A DATA ──
+const sections = [
+  {
+    id: 'opener',
+    label: 'Opener',
+    color: '#4ade9a',
+    cards: [
+      {
+        num: '01',
+        question: '"Tell me a bit about yourself."',
+        answer: `Hi, my name is Mallika.  <span class="pause"></span>
+ "Absolutely. I'm a Senior Data Engineer with 7+ years of experience building enterprise-scale, cloud-native data platforms. I'm currently at Rogers Communications in Toronto, where I lead the design and delivery of Lakehouse architectures using Azure Databricks, Delta Lake, Synapse Analytics, and Informatica. 
+Throughout my career I've owned end-to-end pipelines — from raw ingestion through medallion-layer transformations, all the way to BI dashboards in Power BI — and I've collaborated closely with business stakeholders to make data useful, not just available.`,
+        tip: '⏱ Keep this to 90 seconds. End on the "why TD" hook — it signals you\'ve done your research.'
+      },
+      {
+        num: '02',
+        question: '"How many years of data engineering experience do you have?"',
+        answer: `Just over 7 years — starting as an ETL developer at Capgemini in 2019, then progressing through Data Engineer at Ford, and currently as a Senior Data Engineer at Rogers since March 2023`,
+        tip: '💡 Avoid generic phrases like "great opportunity." Specificity signals genuine interest.'
+      },
+      {
+        num: '03',
+        question: '"The role lists GCP as a core requirement, but your resume is heavily Azure. How do you see that gap?"',
+        answer: `"That's a fair observation. My production experience is on Azure — Databricks, Synapse, ADLS Gen2, ADF. However, many of the concepts transfer directly: I've worked extensively with BigQuery-equivalent platforms like Synapse and Snowflake, and I've used Databricks which runs identically on GCP. I also have SQL and Python expertise that are cloud-agnostic. I'm a fast learner with certifications in Azure Data Engineer and Databricks, and I'm actively building GCP hands-on experience. Given the depth of my data engineering fundamentals, I'm confident I can close that gap quickly."`,
+        tip: '💡 Never say anything negative about your current employer. Frame it as being pulled toward something, not pushed away.'
+      },
+      {
+        num: '04',
+        question: '"The JD mentions dbt heavily. Do you have dbt experience?"',
+        answer: `I haven't used dbt in a production environment yet, but the patterns are very familiar to me — I've been doing layered data transformation modeling using Delta Live Tables and medallion architecture in Databricks, which is conceptually very aligned with dbt's approach of modular, version-controlled SQL transformations. I'm familiar with dbt's documentation and I've been experimenting with it. It's one of the certifications I'm targeting next, actually — the dbt Analytics Engineer cert is on the JD's nice-to-have list.`
+      },
+      {
+        num: '05',
+        question: '"What do you know about TD Bank?"',
+        answer: `TD is one of Canada's Big Six banks <span class="pause"></span> with a significant presence in the US as well. <span class="pause"></span>
+
+What I found interesting when I was researching this role <span class="pause"></span> is that TD's technology organization is genuinely large and sophisticated. <span class="pause"></span>
+
+The Treasury Analytics Group specifically supports the Balance Sheet Management department, <span class="pause"></span> and the focus on wholesale liquidity is particularly interesting to me <span class="pause"></span> because it's a domain where the infrastructure has to be rock-solid. <span class="pause"></span>
+
+TD has also been making serious investments in cloud and data infrastructure, <span class="pause"></span> which aligns with the kind of work I want to do.`,
+        tip: '💡 Do a quick read of TD\'s recent tech news before the call — one specific detail always lands well.'
+      }
+    ]
+  },
+  {
+    id: 'background',
+    label: 'Background',
+    color: '#60a5fa',
+    cards: [
+      {
+        num: '06',
+        question: '"Walk me through your most recent role."',
+        answer: `At Amaris Consulting I'm a Senior DevOps Engineer, <span class="pause"></span> and the work spans infrastructure, automation, and observability. <span class="pause"></span>
+
+A big part of my day-to-day is managing Azure infrastructure using Terraform — <span class="pause"></span> provisioning AKS clusters, VMs, storage, networking, Key Vaults. <span class="pause"></span>
+
+I build and maintain CI/CD pipelines in Azure DevOps using YAML, <span class="pause"></span> and I've integrated monitoring through Datadog and Dynatrace, <span class="pause"></span> which cut our incident response time by around 30%. <span class="pause"></span>
+
+I also do a significant amount of PowerShell and Python scripting <span class="pause"></span> to automate infrastructure tasks and runbooks. <span class="pause"></span>
+
+One of the most interesting projects has been supporting a migration from on-premises to Azure — <span class="pause"></span> that involves architecture planning, provisioning, compliance checks, <span class="pause"></span> and coordinating across teams. <span class="pause"></span>
+
+It's a good mix of hands-on engineering and cross-functional collaboration.`
+      },
+      {
+        num: '07',
+        question: '"What\'s your experience with Azure specifically?"',
+        answer: `Azure has been my primary cloud for most of my career. <span class="pause"></span>
+
+I've worked extensively with AKS, App Services, Azure SQL, Blob Storage, <span class="pause"></span> Data Factory, Azure Data Lake, Key Vault, Function Apps, and Azure Monitor. <span class="pause"></span>
+
+For infrastructure as code I use Terraform as my main tool, <span class="pause"></span> but I've also worked with ARM templates and Bicep. <span class="pause"></span>
+
+On the monitoring side, <span class="pause"></span> I've set up Log Analytics Workspaces, configured diagnostic settings, <span class="pause"></span> and built custom dashboards. <span class="pause"></span>
+
+Networking-wise — VNETs, subnets, NSGs, Azure Load Balancer, Application Gateway, and ExpressRoute. <span class="pause"></span>
+
+And I hold the Microsoft Azure Administrator certification, <span class="pause"></span> so it's both deep hands-on experience and formally validated.`
+      },
+      {
+        num: '08',
+        question: '"Tell me about your AWS experience."',
+        answer: `I got serious AWS experience at CI Financial over about three years. <span class="pause"></span>
+
+I worked with EC2, S3, RDS, Lambda, EKS, CloudFormation, IAM, VPC, CloudWatch, and CloudTrail. <span class="pause"></span>
+
+A lot of my work was around automation — <span class="pause"></span> Python with Boto3 to supplement Terraform and Ansible, <span class="pause"></span> Lambda functions for event-driven processing, <span class="pause"></span> and CloudFormation templates for custom VPC and networking setups. <span class="pause"></span>
+
+I also managed AMI builds and did cost optimization work — <span class="pause"></span> rightsizing, reserved instance strategies, tagging. <span class="pause"></span>
+
+I hold the AWS Developer Associate cert as well. <span class="pause"></span>
+
+Azure is definitely my primary cloud, <span class="pause"></span> but I can operate comfortably in AWS too.`
+      },
+      {
+        num: '09',
+        question: '"How has your role evolved over your career?"',
+        answer: `I started as a Junior DevOps Engineer at Capgemini, mostly executing — <span class="pause"></span> setting up pipelines, configuring Azure services, writing basic Ansible playbooks. <span class="pause"></span>
+
+Then at CI Financial I moved into a more independent role <span class="pause"></span> where I owned full environments — <span class="pause"></span> building Terraform modules, managing AWS infrastructure end to end, running Jenkins and Kubernetes. <span class="pause"></span>
+
+Now at Amaris as a Senior engineer, <span class="pause"></span> I'm the person leading architecture decisions, <span class="pause"></span> planning migrations, mentoring practices across the team, <span class="pause"></span> and being the point of escalation for complex issues. <span class="pause"></span>
+
+The trajectory has been from execution to ownership to leadership — <span class="pause"></span> and I want to continue that arc.`
+      },
+      {
+        num: '10',
+        question: '"What are you looking for in your next role?"',
+        answer: `I'm looking for a role where the infrastructure I build genuinely matters — <span class="pause"></span> where reliability isn't optional. <span class="pause"></span> Financial services is the right domain for that. <span class="pause"></span>
+
+I also want to keep growing technically, <span class="pause"></span> especially in areas like Databricks, large-scale IaC, and observability at scale. <span class="pause"></span>
+
+And I want real ownership. <span class="pause"></span>
+
+The way this TD team is described — <span class="pause"></span> lean, engineering-focused, working on something critical to the bank — <span class="pause"></span> that's the kind of environment where I do my best work.`
+      },
+      {
+        num: '11',
+        question: '"What does a typical day look like in your current role?"',
+        answer: `It varies, but generally I start by checking dashboards — <span class="pause"></span> Datadog and Dynatrace alerts, any overnight issues. <span class="pause"></span>
+
+Then I usually have a standup and some sprint-related work. <span class="pause"></span>
+
+A big chunk of my time goes to Terraform changes and Azure DevOps pipeline work — <span class="pause"></span> either building new functionality or reviewing infrastructure PRs. <span class="pause"></span>
+
+I also spend time on automation scripting — <span class="pause"></span> PowerShell runbooks in Azure Automation or Python scripts for infrastructure tasks. <span class="pause"></span>
+
+Occasionally there are incidents that interrupt the day — <span class="pause"></span> that's where the observability work pays off because we can diagnose faster. <span class="pause"></span>
+
+And some time on documentation, architecture planning for upcoming migrations, <span class="pause"></span> and coordination with app teams.`
+      },
+      {
+        num: '12',
+        question: '"Tell me about your experience in financial services."',
+        answer: `I've spent the last five years in financial services — <span class="pause"></span> first at CI Financial as a DevOps Engineer <span class="pause"></span> and now at Amaris Consulting, where I work with financial sector clients. <span class="pause"></span>
+
+That experience has shaped how I think about reliability, compliance, and change management. <span class="pause"></span>
+
+In finance you can't just push a hotfix at 2am — <span class="pause"></span> there are change approval processes, audit trails, regulatory requirements. <span class="pause"></span>
+
+I've worked extensively with ServiceNow-style change management, <span class="pause"></span> and I understand that stability isn't a nice-to-have — it's the baseline. <span class="pause"></span>
+
+That mindset fits naturally with what TD would expect in this kind of role.`
+      },
+      {
+        num: '13',
+        question: '"What certifications do you hold, and how do they relate to this role?"',
+        answer: `I have four active certifications. <span class="pause"></span>
+
+The Microsoft Azure Administrator cert is directly relevant — <span class="pause"></span> it validates my Azure services, networking, storage, and identity knowledge. <span class="pause"></span>
+
+The Certified Kubernetes Administrator maps to the AKS work in this role. <span class="pause"></span>
+
+The AWS Developer Associate shows breadth across cloud platforms. <span class="pause"></span>
+
+And GitHub Actions Certified is relevant to pipeline automation. <span class="pause"></span>
+
+I pursued these not just to have credentials <span class="pause"></span> but because the preparation filled real gaps and made me better at the work.`
+      }
+    ]
+  },
+  {
+    id: 'technical',
+    label: 'Technical',
+    color: '#fbbf24',
+    cards: [
+      {
+        num: '14',
+        question: '"How do you approach Infrastructure as Code? What tools have you used?"',
+        answer: `My primary IaC tool is Terraform, <span class="pause"></span> which I've used across both Azure and AWS for years. <span class="pause"></span>
+
+I write modular, reusable Terraform modules for compute, networking, AKS clusters, storage, and security — <span class="pause"></span> all version-controlled in Git. <span class="pause"></span>
+
+I've also worked with ARM templates and Bicep on the Azure side, <span class="pause"></span> and CloudFormation on AWS. <span class="pause"></span>
+
+The way I think about IaC is simple — <span class="pause"></span> if you're provisioning something by clicking in a portal, that's a gap. <span class="pause"></span>
+
+Everything should be codified, reviewable, and repeatable. <span class="pause"></span>
+
+I've also integrated Terraform into CI/CD pipelines <span class="pause"></span> so infrastructure changes go through the same review and validation cycle as application code — <span class="pause"></span> plan output reviewed in the PR, apply triggered only after approval.`,
+        tip: '💡 Terraform is listed as a must-have in the JD. Lead with confidence — you have strong credentials here.'
+      },
+      {
+        num: '15',
+        question: '"What\'s your scripting experience — PowerShell, Python, Bash?"',
+        answer: `All three, regularly. <span class="pause"></span>
+
+PowerShell is my most-used for Azure automation — <span class="pause"></span> I've written runbooks in Azure Automation Accounts, <span class="pause"></span> scripts to manage Resource Groups, Key Vaults, firewall rules, <span class="pause"></span> and I've used the Azure DevOps API via PowerShell for access management audits. <span class="pause"></span>
+
+Python I use for automation tasks, API integrations, data processing, <span class="pause"></span> and I've used Boto3 extensively for AWS automation — <span class="pause"></span> things like encrypting EBS volumes and triggering Lambda functions. <span class="pause"></span>
+
+Bash and Shell I use primarily for Linux-based infrastructure tasks <span class="pause"></span> inside CI/CD pipelines and Ansible playbooks. <span class="pause"></span>
+
+I pick the right tool for the context — <span class="pause"></span> PowerShell for Windows and Azure, Python for complex logic, Bash for pipeline glue.`
+      },
+      {
+        num: '16',
+        question: '"Tell me about your CI/CD experience."',
+        answer: `I've built and maintained pipelines across Azure DevOps, Jenkins, GitHub Actions, and GitLab. <span class="pause"></span>
+
+In my current role, I write YAML-based Azure DevOps pipelines <span class="pause"></span> that handle build, test, and deploy for microservices to AKS — <span class="pause"></span> integrated with SonarQube for code quality, JFrog Artifactory for artifacts, and Docker for containerization. <span class="pause"></span>
+
+At CI Financial I worked more heavily with Jenkins, <span class="pause"></span> setting up master-slave configurations and Maven builds. <span class="pause"></span>
+
+I think about CI/CD not just as automation, but as a reliability mechanism — <span class="pause"></span> the pipeline should catch issues before they reach production, <span class="pause"></span> deployments should be identical regardless of who runs them, <span class="pause"></span> and rollbacks should be a button press, not a fire drill.`
+      },
+      {
+        num: '17',
+        question: '"What\'s your experience with Kubernetes and container orchestration?"',
+        answer: `I'm very comfortable with Kubernetes — <span class="pause"></span> I hold the CKA certification <span class="pause"></span> and have hands-on experience across AKS on Azure and EKS on AWS. <span class="pause"></span>
+
+I've deployed and managed microservices using Kubernetes, <span class="pause"></span> written YAML manifests for pods, deployments, replica sets, services, and health checks. <span class="pause"></span>
+
+I've used Helm for package management, <span class="pause"></span> worked with OpenShift on-prem, <span class="pause"></span> and set up Kubernetes clusters using both Terraform and the Azure portal. <span class="pause"></span>
+
+On the monitoring side, <span class="pause"></span> I've integrated Prometheus and Grafana for cluster observability. <span class="pause"></span>
+
+I also set up complete AKS dev environments from scratch for deep learning and ML teams — <span class="pause"></span> including Helm-based deployments on bare metal.`
+      },
+      {
+        num: '18',
+        question: '"How familiar are you with Ansible or other configuration management tools?"',
+        answer: `Ansible is my main configuration management tool. <span class="pause"></span>
+
+I've written playbooks for server provisioning, application deployment, Tomcat configuration, <span class="pause"></span> Kubernetes cluster setup, and compliance enforcement. <span class="pause"></span>
+
+I've worked with Ansible Tower for orchestrating playbooks at scale, <span class="pause"></span> and I'm comfortable with roles, group variables, and dynamic inventory. <span class="pause"></span>
+
+My general pattern is Terraform for infrastructure provisioning <span class="pause"></span> and Ansible for the configuration layer on top — they complement each other well. <span class="pause"></span>
+
+I've also worked with Chef and Puppet in earlier roles. <span class="pause"></span>
+
+I don't have deep production experience with Salt specifically, <span class="pause"></span> but the underlying concepts — idempotency, desired state, agent vs. agentless — <span class="pause"></span> are the same, and I've picked up new tools quickly throughout my career.`,
+        tip: '💡 Be upfront about the Salt gap — honesty is respected, and your Ansible depth is strong.'
+      },
+      {
+        num: '19',
+        question: '"What monitoring and observability tools have you worked with?"',
+        answer: `Quite a few. <span class="pause"></span>
+
+Currently I work heavily with Datadog and Dynatrace — <span class="pause"></span> setting up custom dashboards, SLO-based alerts, <span class="pause"></span> and using Dynatrace's Davis AI for automated incident triage and root cause analysis, <span class="pause"></span> which reduced our MTTR significantly. <span class="pause"></span>
+
+I've set up Prometheus and Grafana for Kubernetes monitoring, <span class="pause"></span> Splunk for log management, <span class="pause"></span> and the ELK Stack for log aggregation and search. <span class="pause"></span>
+
+On Azure specifically, <span class="pause"></span> I've configured Azure Monitor with Log Analytics Workspaces and Application Insights. <span class="pause"></span>
+
+The JD mentions Splunk, Datadog, and ELK — <span class="pause"></span> I have production experience with all of those.`
+      },
+      {
+        num: '20',
+        question: '"How do you handle Windows administration and PowerShell?"',
+        answer: `Windows administration and PowerShell are a regular part of my work. <span class="pause"></span>
+
+I've managed Windows Server VMs in Azure, configured IIS, managed Active Directory integrations, <span class="pause"></span> and automated a wide range of tasks using PowerShell — <span class="pause"></span> from creating Resource Groups and Storage Blobs <span class="pause"></span> to making API calls and running Azure Automation Runbooks. <span class="pause"></span>
+
+I've also done PowerShell scripting for parameter file generation, <span class="pause"></span> Key Vault management, and firewall rule configuration. <span class="pause"></span>
+
+I'm comfortable working in both Windows and Linux environments, <span class="pause"></span> and I can write production-quality PowerShell, not just quick scripts.`
+      },
+      {
+        num: '21',
+        question: '"Have you worked with Databricks or big data technologies?"',
+        answer: `I haven't had a project specifically centered on Databricks, <span class="pause"></span> but I've worked closely with the Azure data ecosystem — <span class="pause"></span> Azure Data Factory for building pipelines, Azure Data Lake for storage, and Azure SQL. <span class="pause"></span>
+
+I've also provisioned and managed data infrastructure using Terraform, <span class="pause"></span> and I understand how Databricks fits architecturally within Azure as a managed Spark platform. <span class="pause"></span>
+
+It's something I'm actively looking to deepen — <span class="pause"></span> I learn new tools quickly, <span class="pause"></span> and given my existing Azure and data pipeline context, <span class="pause"></span> I'd expect to get up to speed relatively fast. <span class="pause"></span>
+
+If there are specific Databricks use cases in this role, <span class="pause"></span> I'd love to understand them better.`,
+        warn: '⚠️ Be honest here — don\'t claim Databricks experience you don\'t have. This answer is honest and forward-looking.'
+      },
+      {
+        num: '22',
+        question: '"How do you approach troubleshooting a production incident?"',
+        answer: `My first step is always to understand the blast radius — <span class="pause"></span> is it a single service, a region, a customer-facing issue? <span class="pause"></span> That shapes how urgent the escalation needs to be. <span class="pause"></span>
+
+Then I go to the monitoring stack — <span class="pause"></span> Datadog and Dynatrace first, <span class="pause"></span> to see if there's an obvious anomaly, a spike, a dependency failure. <span class="pause"></span>
+
+I look at logs via Splunk or ELK <span class="pause"></span> to correlate events around the time the issue started. <span class="pause"></span>
+
+I try to form a hypothesis quickly rather than guessing randomly — <span class="pause"></span> most incidents have patterns. <span class="pause"></span>
+
+Once I identify the likely cause, I isolate it if I can — <span class="pause"></span> rolling back a recent change, disabling a feature flag — <span class="pause"></span> then fix and verify. <span class="pause"></span>
+
+After resolution I always do a lightweight post-mortem <span class="pause"></span> and add monitoring to catch the same thing earlier next time. <span class="pause"></span>
+
+Prevention is the goal, not just recovery.`
+      },
+      {
+        num: '23',
+        question: '"What\'s your experience with ServiceNow or change management?"',
+        answer: `I've worked with formal change management processes throughout my financial services career. <span class="pause"></span>
+
+I understand the standard change request lifecycle — <span class="pause"></span> normal, emergency, and standard pre-approved changes — <span class="pause"></span> and I've raised and coordinated change requests for infrastructure deployments, <span class="pause"></span> including getting approvals from Change Advisory Boards. <span class="pause"></span>
+
+The JD specifically mentions ServiceNow for change management, <span class="pause"></span> and I've used it for logging and tracking changes. <span class="pause"></span>
+
+In a regulated environment like banking, <span class="pause"></span> I think of change management not as overhead but as a quality gate — <span class="pause"></span> it forces you to document what you're changing, what the rollback is, and who's accountable. <span class="pause"></span>
+
+That discipline is actually valuable.`
+      }
+    ]
+  },
+  {
+    id: 'behavioral',
+    label: 'Behavioral',
+    color: '#f472b6',
+    cards: [
+      {
+        num: '24',
+        question: '"Tell me about a time you resolved a complex production issue."',
+        answer: `<span class="star-label" style="color:#f472b6">SITUATION:</span> At Amaris, our payment application was experiencing intermittent latency spikes in production <span class="pause"></span> that we couldn't reproduce in lower environments. <span class="pause"></span> The team had been chasing it for several days without a clear root cause. <span class="pause"></span>
+
+<span class="star-label" style="color:#f472b6">TASK:</span> I was brought in to lead the investigation using our observability stack. <span class="pause"></span>
+
+<span class="star-label" style="color:#f472b6">ACTION:</span> I set up end-to-end distributed tracing in Dynatrace across all the microservices. <span class="pause"></span> I found that one downstream service was hitting Azure SQL connection pool limits <span class="pause"></span> under specific traffic thresholds — <span class="pause"></span> subtle enough that it didn't show up in standard metrics. <span class="pause"></span> I worked with the app team to tune the connection pool settings <span class="pause"></span> and right-sized the Azure SQL tier for the actual load profile. <span class="pause"></span>
+
+<span class="star-label" style="color:#f472b6">RESULT:</span> Latency normalized after the fix. <span class="pause"></span> I set up a dedicated Dynatrace alert for connection pool saturation <span class="pause"></span> so we'd catch it early next time. <span class="pause"></span> That experience reinforced how critical full-stack observability is — <span class="pause"></span> infra metrics alone aren't enough.`,
+        tip: '💡 This is your strongest technical story — deliver it with confidence.'
+      },
+      {
+        num: '25',
+        question: '"Tell me about a time you automated something that saved significant time."',
+        answer: `<span class="star-label" style="color:#f472b6">SITUATION:</span> At CI Financial, the process for provisioning new cloud environments for dev teams was mostly manual — <span class="pause"></span> engineers would spend hours clicking through the portal and following runbooks. <span class="pause"></span>
+
+<span class="star-label" style="color:#f472b6">TASK:</span> I was tasked with automating the provisioning process <span class="pause"></span> to reduce time and eliminate human error. <span class="pause"></span>
+
+<span class="star-label" style="color:#f472b6">ACTION:</span> I built reusable Terraform modules covering the full stack — <span class="pause"></span> VPC, subnets, security groups, VMs, IAM roles, storage, and load balancers. <span class="pause"></span> I integrated these into a Jenkins pipeline <span class="pause"></span> so environments could be provisioned end-to-end from a single pipeline trigger. <span class="pause"></span>
+
+<span class="star-label" style="color:#f472b6">RESULT:</span> What previously took 4 to 6 hours of manual work <span class="pause"></span> became a 20-minute automated process. <span class="pause"></span> It also eliminated the configuration drift we'd been seeing between environments, <span class="pause"></span> which had been causing subtle production bugs.`
+      },
+      {
+        num: '26',
+        question: '"Describe a situation where you had to work with a difficult stakeholder."',
+        answer: `<span class="star-label" style="color:#f472b6">SITUATION:</span> During the on-prem to Azure migration at Amaris, <span class="pause"></span> one of the application teams was very resistant to the new CI/CD pipeline structure. <span class="pause"></span> They'd been managing deployments manually for years <span class="pause"></span> and were worried about losing control. <span class="pause"></span>
+
+<span class="star-label" style="color:#f472b6">TASK:</span> I needed to get their buy-in without just mandating the change from above. <span class="pause"></span>
+
+<span class="star-label" style="color:#f472b6">ACTION:</span> Rather than presenting them with a finished pipeline and asking them to use it, <span class="pause"></span> I brought them into the design process early. <span class="pause"></span> I ran a working session where we walked through their current deployment steps <span class="pause"></span> and mapped them into the pipeline together. <span class="pause"></span> I showed them the rollback mechanism and the approval gates — <span class="pause"></span> making clear they had more control, not less. <span class="pause"></span>
+
+<span class="star-label" style="color:#f472b6">RESULT:</span> They became advocates for the pipeline. <span class="pause"></span> By the end of the project they were the ones demoing it to other teams. <span class="pause"></span> The lesson: resistance usually comes from uncertainty, not stubbornness — <span class="pause"></span> transparency and involvement solve it better than authority.`
+      },
+      {
+        num: '27',
+        question: '"Tell me about a time you made a mistake in production."',
+        answer: `<span class="star-label" style="color:#f472b6">SITUATION:</span> Early in my time at CI Financial, <span class="pause"></span> I misconfigured a security group rule during a Terraform apply <span class="pause"></span> that briefly exposed an internal service to unintended traffic. <span class="pause"></span>
+
+<span class="star-label" style="color:#f472b6">TASK:</span> Immediate priority was to close the exposure and assess impact, <span class="pause"></span> then communicate and prevent recurrence. <span class="pause"></span>
+
+<span class="star-label" style="color:#f472b6">ACTION:</span> I spotted the issue within minutes via CloudWatch alerts, <span class="pause"></span> corrected the rule, and confirmed no unauthorized access had occurred. <span class="pause"></span> I then escalated to my manager and the security team immediately — <span class="pause"></span> transparency was non-negotiable. <span class="pause"></span> I proposed two process improvements: <span class="pause"></span> automated Terraform plan reviews with Open Policy Agent, <span class="pause"></span> and mandatory peer review for any changes touching security groups. <span class="pause"></span>
+
+<span class="star-label" style="color:#f472b6">RESULT:</span> Both improvements were implemented. <span class="pause"></span> We had no similar incidents afterward. <span class="pause"></span> My manager's feedback was that the way I handled it — <span class="pause"></span> fast action, honest communication, and systemic fixes — <span class="pause"></span> was exactly the right response.`,
+        tip: '💡 This question tests integrity and self-awareness more than technical skills. Own the mistake, show the fix, show what you learned.'
+      },
+      {
+        num: '28',
+        question: '"How do you manage competing priorities or a heavy workload?"',
+        answer: `I triage by impact and urgency first — <span class="pause"></span> production issues blocking other teams jump the queue immediately. <span class="pause"></span>
+
+For everything else, I make the work visible in Jira <span class="pause"></span> and communicate status proactively, especially to stakeholders. <span class="pause"></span>
+
+I try to batch similar work — <span class="pause"></span> infrastructure reviews in one block, scripting in another — <span class="pause"></span> to minimize context switching. <span class="pause"></span>
+
+And I've learned to be direct about capacity — <span class="pause"></span> I'd rather say "here's what I can realistically deliver this sprint and here's what would need to move" <span class="pause"></span> than overpromise and underdeliver. <span class="pause"></span>
+
+Transparent workload management prevents surprises — <span class="pause"></span> and in a financial services environment, that matters a lot.`
+      },
+      {
+        num: '29',
+        question: '"Tell me about a time you had to learn something new quickly."',
+        answer: `When I joined CI Financial, <span class="pause"></span> they were transitioning from a mostly on-prem setup to AWS, <span class="pause"></span> and I needed to get productive with AWS services quickly while still delivering. <span class="pause"></span>
+
+I focused on getting hands-on immediately rather than spending weeks in courses — <span class="pause"></span> I spun up test environments, <span class="pause"></span> worked through specific problems the team had, <span class="pause"></span> and read the AWS documentation deeply for services I was actually using. <span class="pause"></span>
+
+Within a few weeks I was writing CloudFormation and Terraform for AWS infrastructure. <span class="pause"></span>
+
+I also scheduled time with senior colleagues to review my approach <span class="pause"></span> and catch gaps early. <span class="pause"></span>
+
+The lesson: learn by doing, <span class="pause"></span> but be deliberate about what you don't know yet <span class="pause"></span> and get it reviewed.`
+      },
+      {
+        num: '30',
+        question: '"Describe a project you\'re particularly proud of."',
+        answer: `The on-prem to Azure migration at Amaris stands out. <span class="pause"></span>
+
+I was involved from the architecture planning phase all the way through to production deployment — <span class="pause"></span> creating the Azure environment structure, <span class="pause"></span> writing the Terraform modules for IaaS VMs and PaaS role instances, <span class="pause"></span> configuring Azure Data Factory pipelines to move data, <span class="pause"></span> setting up the networking — VNETs, NSGs, ExpressRoute — <span class="pause"></span> and implementing the monitoring stack. <span class="pause"></span>
+
+What made it particularly satisfying <span class="pause"></span> is that it wasn't just a lift-and-shift. <span class="pause"></span>
+
+We made real architectural improvements along the way. <span class="pause"></span>
+
+The outcome was a more reliable, observable, and automatable environment <span class="pause"></span> than what they had on-premises — <span class="pause"></span> and it's been stable since go-live.`
+      },
+      {
+        num: '31',
+        question: '"How do you stay current with new technologies and trends?"',
+        answer: `A few ways. <span class="pause"></span>
+
+Certifications are one — <span class="pause"></span> the preparation process forces me to go deep on things I might otherwise skim past. <span class="pause"></span>
+
+I follow the Azure and AWS release notes <span class="pause"></span> because cloud services evolve constantly <span class="pause"></span> and things that weren't possible six months ago sometimes become available <span class="pause"></span> and change how I'd approach a problem. <span class="pause"></span>
+
+I also pay attention to what's being discussed in DevOps and platform engineering communities — <span class="pause"></span> currently things like eBPF, GitOps patterns, <span class="pause"></span> and platform engineering as a discipline are areas I've been reading about. <span class="pause"></span>
+
+And working on real projects is still the best learning — <span class="pause"></span> every migration, every incident, every new tool integration <span class="pause"></span> teaches me something I couldn't have gotten from a course.`
+      }
+    ]
+  },
+  {
+    id: 'situational',
+    label: 'Situational',
+    color: '#4ade9a',
+    cards: [
+      {
+        num: '32',
+        question: '"If you found our infrastructure was largely manual and undocumented, what would you do?"',
+        answer: `First I'd spend time understanding what's actually there before changing anything — <span class="pause"></span> manual doesn't always mean broken, <span class="pause"></span> and undocumented doesn't mean wrong. <span class="pause"></span>
+
+I'd map the current state, identify what's working well, <span class="pause"></span> and understand why things were built the way they were. <span class="pause"></span>
+
+Then I'd prioritize based on risk and pain — <span class="pause"></span> what's most fragile, what's blocking people, what's causing the most incidents. <span class="pause"></span>
+
+I'd introduce IaC incrementally — <span class="pause"></span> wrapping existing infrastructure in Terraform state files before changing anything, <span class="pause"></span> so you get auditability and repeatability without disruption. <span class="pause"></span>
+
+Documentation I'd treat as code — <span class="pause"></span> living docs that get updated with every change, not a one-time project. <span class="pause"></span>
+
+And I'd do all of this collaboratively with the team, <span class="pause"></span> because the people who built the current system <span class="pause"></span> have context that isn't written down anywhere.`
+      },
+      {
+        num: '33',
+        question: '"How would you handle a major outage during a critical business period?"',
+        answer: `The priority ordering in that situation is — <span class="pause"></span> restore service first, <span class="pause"></span> understand cause second, <span class="pause"></span> prevent recurrence third. <span class="pause"></span>
+
+During the outage I'd focus entirely on restoring functionality — <span class="pause"></span> whether that's a rollback, a failover, or a targeted fix. <span class="pause"></span>
+
+I'd keep stakeholders informed with brief, factual updates on a regular cadence <span class="pause"></span> so they're not in the dark. <span class="pause"></span>
+
+I'd also resist the urge to do exploratory investigation during an active incident — <span class="pause"></span> that can wait. <span class="pause"></span>
+
+Once service is restored, I'd do a proper post-mortem within 24 to 48 hours — <span class="pause"></span> with a timeline of events, a clear root cause, and specific action items. <span class="pause"></span>
+
+In a treasury or liquidity context <span class="pause"></span> I'd also expect there to be regulatory notification requirements to understand and follow.`
+      },
+      {
+        num: '34',
+        question: '"If you disagreed with a technical decision made by a senior colleague, what would you do?"',
+        answer: `I'd raise it directly and privately first — <span class="pause"></span> not in a group setting where it could feel like a public challenge. <span class="pause"></span>
+
+I'd come prepared with specifics — <span class="pause"></span> here's my concern, <span class="pause"></span> here's the alternative I'd propose, <span class="pause"></span> here's the tradeoff. <span class="pause"></span>
+
+I think good engineering requires that disagreements get surfaced, <span class="pause"></span> because the best decision usually emerges from that kind of debate. <span class="pause"></span>
+
+If after a proper discussion the senior colleague still disagrees, <span class="pause"></span> and I can see their reasoning even if I don't fully agree — <span class="pause"></span> I'd support the decision and execute it well. <span class="pause"></span>
+
+Disagree and commit is a real thing. <span class="pause"></span>
+
+The only exception would be if I genuinely believed the decision created a serious security or compliance risk — <span class="pause"></span> in that case I'd escalate appropriately.`
+      },
+      {
+        num: '35',
+        question: '"What would you do if a deployment you ran caused unexpected downstream failures?"',
+        answer: `Rollback first if it's safe and fast — <span class="pause"></span> I'd rather accept the deployment delay <span class="pause"></span> than keep a broken state running. <span class="pause"></span>
+
+At the same time I'd flag it immediately to the team and stakeholders — <span class="pause"></span> no waiting to see if it resolves itself. <span class="pause"></span>
+
+Then I'd investigate the downstream impact — <span class="pause"></span> what's affected, who's affected, is data integrity at risk. <span class="pause"></span>
+
+Once the immediate situation is stabilized, <span class="pause"></span> I'd do a proper root cause analysis — <span class="pause"></span> looking at both why the failure happened <span class="pause"></span> and why our testing didn't catch it. <span class="pause"></span>
+
+That second part is critical — <span class="pause"></span> the goal isn't to blame the deployment, <span class="pause"></span> it's to understand what gap in the pipeline or testing <span class="pause"></span> allowed a failure like this to reach production.`
+      },
+      {
+        num: '36',
+        question: '"How would you approach onboarding to a new, complex infrastructure?"',
+        answer: `I start with the architecture — <span class="pause"></span> I want the big picture before the details. <span class="pause"></span>
+
+I'd look at architecture diagrams if they exist, <span class="pause"></span> or draw my own as I learn. <span class="pause"></span>
+
+Then I'd trace a specific, representative flow end to end — <span class="pause"></span> a deployment, a provisioning request — <span class="pause"></span> to understand how the pieces connect in practice. <span class="pause"></span>
+
+I ask a lot of questions in the first few weeks <span class="pause"></span> because the cost of asking is low and the cost of assuming is high. <span class="pause"></span>
+
+I also try to make small, safe contributions early — <span class="pause"></span> not because they're impactful, <span class="pause"></span> but because doing is the fastest way to understand. <span class="pause"></span>
+
+And I document what I learn as I go — <span class="pause"></span> partly for myself and partly because new eyes often spot gaps in existing documentation <span class="pause"></span> that the team no longer sees.`
+      }
+    ]
+  },
+  {
+    id: 'culture',
+    label: 'Culture & Fit',
+    color: '#60a5fa',
+    cards: [
+      {
+        num: '37',
+        question: '"How would you describe your working style?"',
+        answer: `I'm pretty autonomous — <span class="pause"></span> I don't need a lot of hand-holding to figure out what needs to be done and start doing it. <span class="pause"></span>
+
+But I'm also collaborative — <span class="pause"></span> I actively seek input on decisions that will affect other people, <span class="pause"></span> and I think good engineering happens in dialogue, not isolation. <span class="pause"></span>
+
+I tend to be the person who documents things as I go <span class="pause"></span> and tries to leave systems in better shape than I found them. <span class="pause"></span>
+
+I take ownership seriously — <span class="pause"></span> when something's mine, I see it through. <span class="pause"></span>
+
+And if something goes wrong, <span class="pause"></span> I'd rather be the one surfacing it <span class="pause"></span> than hoping someone else catches it.`
+      },
+      {
+        num: '38',
+        question: '"Are you comfortable with the pace of a smaller team inside a large bank?"',
+        answer: `Yes — in fact that kind of environment is where I do my best work. <span class="pause"></span>
+
+I've been in lean engineering teams within larger organizations <span class="pause"></span> and I like the combination of startup-style ownership <span class="pause"></span> with enterprise-level scale and resources. <span class="pause"></span>
+
+The ambiguity doesn't bother me — <span class="pause"></span> I'm used to defining the problem before solving it. <span class="pause"></span>
+
+And the pace suits me — <span class="pause"></span> I tend to be someone who pushes things forward rather than waiting for direction. <span class="pause"></span>
+
+The fact that this team operates with real engineering autonomy inside TD <span class="pause"></span> is actually a draw, not a concern.`
+      },
+      {
+        num: '39',
+        question: '"Are you open to a hybrid or in-office setup in Toronto?"',
+        answer: `Absolutely. <span class="pause"></span>
+
+I'm based in Toronto so that works perfectly. <span class="pause"></span>
+
+I'm flexible on the arrangement — <span class="pause"></span> I understand that for critical infrastructure work <span class="pause"></span> there are times when being on-site matters, <span class="pause"></span> particularly for major releases or incidents. <span class="pause"></span>
+
+Whatever structure works best for the team is fine with me.`,
+        tip: '💡 Don\'t negotiate the hybrid arrangement in the recruiter screen. Signal flexibility — save logistics for the offer stage.'
+      },
+      {
+        num: '40',
+        question: '"What does professional growth look like for you over the next few years?"',
+        answer: `I want to deepen my expertise in platform engineering — <span class="pause"></span> building the internal platforms and tooling <span class="pause"></span> that let development teams move faster without reinventing the wheel. <span class="pause"></span>
+
+I'm also interested in the intersection of DevOps and data infrastructure, <span class="pause"></span> which is why Databricks and large-scale IaC interest me. <span class="pause"></span>
+
+And I'd like to grow in the direction of technical leadership — <span class="pause"></span> not necessarily management, <span class="pause"></span> but being the person who can own architecture decisions, <span class="pause"></span> mentor others, and drive engineering standards. <span class="pause"></span>
+
+This role at TD feels like it could be a significant step in that direction, <span class="pause"></span> given the complexity and the ownership model.`
+      },
+      {
+        num: '41',
+        question: '"Do you have any other applications active right now?"',
+        answer: `I'm exploring a few opportunities, yes — <span class="pause"></span> I want to be thoughtful about my next move rather than jumping at the first thing. <span class="pause"></span>
+
+But I'll be honest — <span class="pause"></span> this role at TD is at the top of my list <span class="pause"></span> given the technical environment and the domain. <span class="pause"></span>
+
+If the process moves forward, <span class="pause"></span> I'd be very motivated to make it work.`,
+        tip: '💡 Saying you have other options signals you\'re in demand. Saying this role is your top choice shows genuine interest.'
+      }
+    ]
+  },
+  {
+    id: 'comp',
+    label: 'Comp & Logistics',
+    color: '#a78bfa',
+    cards: [
+      {
+        num: '42',
+        question: '"What are your salary expectations?"',
+        answer: `I'm open to the conversation. <span class="pause"></span>
+
+Based on my research and my experience level — <span class="pause"></span> seven years, Azure and AWS certified, <span class="pause"></span> senior DevOps engineer in financial services — <span class="pause"></span> I'd expect to be in the range of $110,000 to $130,000 for base. <span class="pause"></span>
+
+But I'd love to understand what TD has budgeted for this role. <span class="pause"></span>
+
+I know TD's job description mentions they're happy to discuss compensation, <span class="pause"></span> so I'm hoping we can find something that reflects both the scope of the role <span class="pause"></span> and what I bring to it.`,
+        tip: '💡 Research senior DevOps salaries in Toronto before the call. Have a specific range — don\'t say "I\'m flexible" without a number.'
+      },
+      {
+        num: '43',
+        question: '"When would you be available to start?"',
+        answer: `I'd need to give my current employer proper notice — <span class="pause"></span> typically two weeks, <span class="pause"></span> though I'd want to make sure I transition my projects responsibly <span class="pause"></span> so I'm not leaving them in a difficult spot. <span class="pause"></span>
+
+So realistically, three to four weeks from an offer date would be my target. <span class="pause"></span>
+
+If there's a specific timeline that works better for TD, <span class="pause"></span> I'm open to discussing it.`
+      },
+      {
+        num: '44',
+        question: '"Is there anything else you\'d like us to know?"',
+        answer: `I'd just reiterate that I think there's a strong match here — <span class="pause"></span> my Azure, Terraform, Kubernetes, and scripting background <span class="pause"></span> align well with what you're looking for, <span class="pause"></span> and the financial services context is something I've been operating in for several years. <span class="pause"></span>
+
+I'm genuinely excited about this domain. <span class="pause"></span>
+
+And yes, I do have a few questions for you — <span class="pause"></span>
+
+What does the team's current infrastructure stack look like, <span class="pause"></span> and where are the biggest engineering challenges right now? <span class="pause"></span>
+
+What would success look like in the first 90 days? <span class="pause"></span>
+
+And what are the next steps in the process after this call?`,
+        tip: '💡 Always close positively and specifically. "I\'m excited about this" lands much better than "sounds good." Always ask at least one question.'
+      }
+    ]
+  }
+];
+
+// ── FLATTEN ALL CARDS ──
+let allCards = [];
+sections.forEach(s => {
+  s.cards.forEach(c => allCards.push({ ...c, sectionLabel: s.label, sectionColor: s.color }));
+});
+
+let currentIdx = 0;
+let isPlaying = false;
+let scrollInterval = null;
+let speed = 1.0;
+let fontIdx = 1; // 0=sm,1=md,2=lg,3=xl
+const fontClasses = ['font-sm','font-md','font-lg','font-xl'];
+const fontLabels = ['S','M','L','XL'];
+
+// ── BUILD SIDEBAR ──
+function buildSidebar() {
+  const sb = document.getElementById('sidebar');
+  let html = '';
+  let absIdx = 0;
+  sections.forEach(s => {
+    html += `<div class="sidebar-section">
+      <div class="sidebar-heading" style="color:${s.color}">${s.label}</div>`;
+    s.cards.forEach(c => {
+      const i = absIdx;
+      const short = c.question.replace(/"/g,'').substring(0,50) + (c.question.length > 52 ? '…' : '');
+      html += `<button class="sidebar-item ${i===0?'active':''}" id="sb-${i}" onclick="jumpTo(${i})">${c.num}. ${short}</button>`;
+      absIdx++;
+    });
+    html += '</div>';
+  });
+  sb.innerHTML = html;
+}
+
+// ── BUILD PROMPTER ──
+function buildPrompter() {
+  const scroller = document.getElementById('scroller');
+  let html = '';
+  allCards.forEach((c, i) => {
+    const tipHtml = c.tip ? `<div class="card-tip"><strong>Note:</strong> ${c.tip}</div>` : '';
+    const warnHtml = c.warn ? `<div class="card-warn"><strong>Heads up:</strong> ${c.warn}</div>` : '';
+    html += `
+      <div class="card ${i===0?'current':''}" id="card-${i}" data-idx="${i}">
+        <div class="card-section-badge" style="color:${c.sectionColor}">${c.sectionLabel} · Q${c.num}</div>
+        <div class="card-question" style="border-left-color:${c.sectionColor}">${c.question}</div>
+        <div class="card-answer-label">Your answer</div>
+        <div class="card-answer">${c.answer}</div>
+        ${tipHtml}${warnHtml}
+      </div>`;
+  });
+  scroller.innerHTML = html;
+
+  // Observe which card is in view
+  const observer = new IntersectionObserver(entries => {
+    entries.forEach(e => {
+      if (e.isIntersecting && e.intersectionRatio > 0.3) {
+        const idx = parseInt(e.target.dataset.idx);
+        updateActive(idx);
+      }
+    });
+  }, { threshold: 0.3, rootMargin: '-30% 0px -30% 0px' });
+
+  document.querySelectorAll('.card').forEach(el => observer.observe(el));
+}
+
+function updateActive(idx) {
+  if (idx === currentIdx) return;
+  currentIdx = idx;
+
+  document.querySelectorAll('.card').forEach((el, i) => {
+    el.classList.remove('current','nearby');
+    const diff = Math.abs(i - idx);
+    if (diff === 0) el.classList.add('current');
+    else if (diff <= 2) el.classList.add('nearby');
+  });
+
+  document.querySelectorAll('.sidebar-item').forEach((el, i) => {
+    el.classList.toggle('active', i === idx);
+  });
+
+  const sbItem = document.getElementById(`sb-${idx}`);
+  if (sbItem) sbItem.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+
+  document.getElementById('qCounter').textContent = `${idx + 1} / ${allCards.length}`;
+  document.getElementById('progressFill').style.width = `${((idx+1)/allCards.length)*100}%`;
+}
+
+// ── AUTO SCROLL ──
+function togglePlay() {
+  isPlaying = !isPlaying;
+  const btn = document.getElementById('playBtn');
+  if (isPlaying) {
+    btn.textContent = '⏸ Pause';
+    btn.classList.add('playing');
+    startScroll();
+  } else {
+    btn.textContent = '▶ Play';
+    btn.classList.remove('playing');
+    stopScroll();
+  }
+}
+
+function startScroll() {
+  stopScroll();
+  const scroller = document.getElementById('scroller');
+  scrollInterval = setInterval(() => {
+    scroller.scrollBy({ top: speed * 0.7, behavior: 'auto' });
+    if (scroller.scrollTop + scroller.clientHeight >= scroller.scrollHeight - 10) {
+      stopScroll();
+      isPlaying = false;
+      document.getElementById('playBtn').textContent = '▶ Play';
+      document.getElementById('playBtn').classList.remove('playing');
+    }
+  }, 16);
+}
+
+function stopScroll() {
+  if (scrollInterval) { clearInterval(scrollInterval); scrollInterval = null; }
+}
+
+function resetScroll() {
+  stopScroll();
+  isPlaying = false;
+  document.getElementById('playBtn').textContent = '▶ Play';
+  document.getElementById('playBtn').classList.remove('playing');
+  document.getElementById('scroller').scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function changeSpeed(delta) {
+  speed = Math.max(0.5, Math.min(5, parseFloat((speed + delta).toFixed(1))));
+  document.getElementById('speedVal').textContent = speed.toFixed(1) + '×';
+  if (isPlaying) { stopScroll(); startScroll(); }
+}
+
+// ── FONT SIZE ──
+function changeFont(delta) {
+  document.body.classList.remove(fontClasses[fontIdx]);
+  fontIdx = Math.max(0, Math.min(3, fontIdx + delta));
+  document.body.classList.add(fontClasses[fontIdx]);
+  document.getElementById('fontVal').textContent = fontLabels[fontIdx];
+}
+
+// ── NAVIGATION ──
+function jumpTo(idx) {
+  const card = document.getElementById(`card-${idx}`);
+  if (!card) return;
+  card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  updateActive(idx);
+}
+
+function prevCard() { if (currentIdx > 0) jumpTo(currentIdx - 1); }
+function nextCard() { if (currentIdx < allCards.length - 1) jumpTo(currentIdx + 1); }
+
+// ── KEYBOARD SHORTCUTS ──
+document.addEventListener('keydown', e => {
+  if (e.code === 'Space') { e.preventDefault(); togglePlay(); }
+  if (e.code === 'ArrowRight' || e.code === 'ArrowDown') { e.preventDefault(); nextCard(); }
+  if (e.code === 'ArrowLeft' || e.code === 'ArrowUp') { e.preventDefault(); prevCard(); }
+  if (e.code === 'Equal' || e.code === 'NumpadAdd') changeSpeed(0.5);
+  if (e.code === 'Minus' || e.code === 'NumpadSubtract') changeSpeed(-0.5);
+});
+
+// ── INIT ──
+buildSidebar();
+buildPrompter();
+document.body.classList.add('font-md');
+</script>
+</body>
+</html>
